@@ -36,6 +36,18 @@ class LoginForm extends Model
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function attributeLabels()
+    {
+        return [
+            'username' => 'Логин или Email',
+            'password' => 'Пароль',
+            'rememberMe' => 'Запомнить меня',
+        ];
+    }
+
+    /**
      * Validates the password.
      * This method serves as the inline validation for password.
      *
@@ -48,7 +60,11 @@ class LoginForm extends Model
             $user = $this->getUser();
 
             if (!$user || !$user->validatePassword($this->password)) {
-                $this->addError($attribute, 'Incorrect username or password.');
+                $this->addError($attribute, 'Неверный логин или пароль.');
+            } else if ($user->status === User::STATUS_INACTIVE) {
+                $this->addError($attribute, 'Ваш аккаунт не подтвержден. Пожалуйста, проверьте вашу электронную почту.');
+            } else if ($user->status === User::STATUS_BANNED) {
+                $this->addError($attribute, 'Ваш аккаунт заблокирован. Пожалуйста, свяжитесь с администрацией сайта.');
             }
         }
     }
@@ -73,7 +89,11 @@ class LoginForm extends Model
     public function getUser()
     {
         if ($this->_user === false) {
+            // Пытаемся найти пользователя по логину или по email
             $this->_user = User::findByUsername($this->username);
+            if (!$this->_user) {
+                $this->_user = User::findByEmail($this->username);
+            }
         }
 
         return $this->_user;
