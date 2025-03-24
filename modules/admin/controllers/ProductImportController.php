@@ -8,6 +8,9 @@ use app\models\Product;
 use app\models\Category;
 use yii\httpclient\Client;
 use yii\helpers\Json;
+use yii\helpers\HtmlPurifier;
+use yii\helpers\Html;
+use yii\helpers\Inflector;
 
 class ProductImportController extends Controller
 {
@@ -20,25 +23,56 @@ class ProductImportController extends Controller
         'recid' => '230354419',
         'c' => '1742742864790',
         'getparts' => 'true',
-        'size' => 4 // Увеличиваем количество товаров на странице до максимума
+        'size' => 50 // Увеличиваем количество товаров на странице до максимума
     ];
+    
+    // Хранение категорий Tilda
+    private $tildaCategories = [];
+    private $categoryMapping = [];
+    
+    /**
+     * Главная страница импорта с доступными действиями
+     */
+    public function actionIndex()
+    {
+        return $this->render('index');
+    }
     
     /**
      * Импорт всех товаров из API Tilda с использованием пагинации
+     * 
+     * @param bool $cleanHtml Очищать HTML-теги в описаниях
+     * @param bool $updateExisting Обновлять существующие товары
+     * @param bool $importCategories Импортировать категории
+     * @return \yii\web\Response
      */
-    public function actionImportAllFromApi()
+    public function actionImportAllFromApi($cleanHtml = true, $updateExisting = true, $importCategories = true)
     {
         $client = new Client();
         $totalCount = 0;
         $importCount = 0;
+        $updateCount = 0;
+        $skipCount = 0;
         $errorCount = 0;
+        $categoryCount = 0;
         $slice = 1;
         $hasMoreProducts = true;
         
         // Получаем категорию по умолчанию или создаем ее
         $defaultCategory = $this->getOrCreateDefaultCategory();
         if (!$defaultCategory) {
-            return $this->redirect(['/admin/product']);
+            return $this->redirect(['index']);
+        }
+        
+        // Если нужно импортировать категории, загружаем их предварительно
+        if ($importCategories) {
+            try {
+                $categoryCount = $this->loadTildaCategories();
+                Yii::info('Загружено ' . $categoryCount . ' категорий из Tilda', 'import');
+            } catch (\Exception $e) {
+                Yii::warning('Ошибка при загрузке категорий: ' . $e->getMessage(), 'import');
+                Yii::$app->session->setFlash('warning', 'Ошибка при загрузке категорий: ' . $e->getMessage() . '. Будет использована категория по умолчанию.');
+            }
         }
         
         // Цикл по всем страницам с товарами
@@ -71,14 +105,23 @@ class ProductImportController extends Controller
                 continue;
             }
             
+            // При первом запросе загружаем и обрабатываем фильтры (категории) из API
+            if ($slice === 1 && $importCategories && !empty($data['filters'])) {
+                $this->processTildaFilters($data['filters']);
+            }
+            
             // Обновляем общее количество товаров
-            $totalCount = $data['total'] ?? 0;
+            $totalCount = $data['total'] ?? count($data['products']);
             
             // Обрабатываем полученные товары
             foreach ($data['products'] as $item) {
-                $result = $this->processProduct($item, $defaultCategory);
-                if ($result) {
+                $result = $this->processProduct($item, $defaultCategory, $cleanHtml, $updateExisting, $importCategories);
+                if ($result === 'imported') {
                     $importCount++;
+                } elseif ($result === 'updated') {
+                    $updateCount++;
+                } elseif ($result === 'skipped') {
+                    $skipCount++;
                 } else {
                     $errorCount++;
                 }
@@ -96,18 +139,25 @@ class ProductImportController extends Controller
         }
         
         // Устанавливаем flash-сообщение с результатами импорта
-        Yii::$app->session->setFlash(
-            'success', 
-            "Импорт завершен: всего товаров - $totalCount, импортировано - $importCount, с ошибками - $errorCount"
-        );
+        $message = "Импорт завершен: всего товаров - $totalCount, импортировано - $importCount, обновлено - $updateCount, пропущено - $skipCount, с ошибками - $errorCount";
+        if ($importCategories) {
+            $message .= ". Категорий импортировано/обновлено: " . count($this->categoryMapping);
+        }
         
-        return $this->redirect(['/admin/product']);
+        Yii::$app->session->setFlash('success', $message);
+        
+        return $this->redirect(['index']);
     }
     
     /**
      * Импорт товаров из API Tilda (только одна страница)
+     * 
+     * @param bool $cleanHtml Очищать HTML-теги в описаниях
+     * @param bool $updateExisting Обновлять существующие товары
+     * @param bool $importCategories Импортировать категории
+     * @return \yii\web\Response
      */
-    public function actionImportFromApi()
+    public function actionImportFromApi($cleanHtml = true, $updateExisting = true, $importCategories = true)
     {
         // Задаем номер страницы
         $this->params['slice'] = 1;
@@ -122,44 +172,173 @@ class ProductImportController extends Controller
         // Проверяем, что ответ получен
         if (!$response->isOk) {
             Yii::$app->session->setFlash('error', 'Ошибка при получении данных: ' . $response->statusCode);
-            return $this->redirect(['/admin/product']);
+            return $this->redirect(['index']);
         }
         
         try {
             $data = $response->getData();
         } catch (\Exception $e) {
             Yii::$app->session->setFlash('error', 'Ошибка при разборе JSON: ' . $e->getMessage());
-            return $this->redirect(['/admin/product']);
+            return $this->redirect(['index']);
         }
         
         $importCount = 0;
+        $updateCount = 0;
+        $skipCount = 0;
         $errorCount = 0;
         
         // Получаем категорию по умолчанию или создаем ее
         $defaultCategory = $this->getOrCreateDefaultCategory();
         if (!$defaultCategory) {
-            return $this->redirect(['/admin/product']);
+            return $this->redirect(['index']);
+        }
+        
+        // Загружаем и обрабатываем категории, если нужно
+        if ($importCategories && !empty($data['filters'])) {
+            $this->processTildaFilters($data['filters']);
         }
         
         if (isset($data['products']) && !empty($data['products'])) {
             foreach ($data['products'] as $item) {
-                $result = $this->processProduct($item, $defaultCategory);
-                if ($result) {
+                $result = $this->processProduct($item, $defaultCategory, $cleanHtml, $updateExisting, $importCategories);
+                if ($result === 'imported') {
                     $importCount++;
+                } elseif ($result === 'updated') {
+                    $updateCount++;
+                } elseif ($result === 'skipped') {
+                    $skipCount++;
                 } else {
                     $errorCount++;
                 }
             }
             
-            Yii::$app->session->setFlash(
-                'success', 
-                "Товары импортированы: $importCount успешно, $errorCount с ошибками"
-            );
+            $message = "Импорт завершен: импортировано - $importCount, обновлено - $updateCount, пропущено - $skipCount, с ошибками - $errorCount";
+            if ($importCategories) {
+                $message .= ". Категорий импортировано/обновлено: " . count($this->categoryMapping);
+            }
+            
+            Yii::$app->session->setFlash('success', $message);
         } else {
             Yii::$app->session->setFlash('warning', 'Товары не найдены в ответе API');
         }
         
-        return $this->redirect(['/admin/product']);
+        return $this->redirect(['index']);
+    }
+    
+    /**
+     * Загружает категории из API Tilda
+     * 
+     * @return int Количество загруженных категорий
+     */
+    private function loadTildaCategories()
+    {
+        // Формируем URL запроса на первую страницу для получения фильтров
+        $tempParams = $this->params;
+        $tempParams['slice'] = 1;
+        $tempParams['size'] = 1; // Достаточно одного товара для получения фильтров
+        
+        $url = $this->baseUrl . '?' . http_build_query($tempParams);
+        
+        // Отправляем запрос
+        $client = new Client();
+        $response = $client->get($url)->send();
+        
+        if (!$response->isOk) {
+            throw new \Exception('Ошибка при получении данных: ' . $response->statusCode);
+        }
+        
+        $data = $response->getData();
+        
+        if (!isset($data['filters']) || !isset($data['filters']['filters'])) {
+            throw new \Exception('В ответе API отсутствуют фильтры');
+        }
+        
+        return $this->processTildaFilters($data['filters']);
+    }
+    
+    /**
+     * Обрабатывает фильтры из API Tilda и создает соответствующие категории
+     * 
+     * @param array $filters Фильтры из API Tilda
+     * @return int Количество обработанных категорий
+     */
+    private function processTildaFilters($filters)
+    {
+        if (!isset($filters['filters'])) {
+            return 0;
+        }
+        
+        $count = 0;
+        
+        foreach ($filters['filters'] as $filter) {
+            // Ищем фильтр категорий (storepartuid)
+            if ($filter['name'] === 'storepartuid' && isset($filter['values']) && is_array($filter['values'])) {
+                $this->tildaCategories = $filter['values'];
+                
+                // Создаем/обновляем категории в базе данных
+                foreach ($filter['values'] as $category) {
+                    if (!isset($category['id']) || !isset($category['value'])) {
+                        continue;
+                    }
+                    
+                    $categoryId = $category['id'];
+                    $categoryName = $category['value'];
+                    $categoryCount = $category['count'] ?? 0;
+                    
+                    // Проверяем существование категории по имени
+                    $existingCategory = Category::findOne(['name' => $categoryName]);
+                    
+                    if ($existingCategory) {
+                        // Сохраняем соответствие Tilda ID и локального ID
+                        $this->categoryMapping[$categoryId] = $existingCategory->id;
+                    } else {
+                        // Создаем новую категорию
+                        $newCategory = new Category();
+                        $newCategory->name = $categoryName;
+                        $newCategory->slug = Inflector::slug($categoryName);
+                        $newCategory->status = 1; // Активная категория
+                        
+                        if ($newCategory->save()) {
+                            $this->categoryMapping[$categoryId] = $newCategory->id;
+                            $count++;
+                        } else {
+                            Yii::error('Ошибка при создании категории: ' . Json::encode($newCategory->errors), 'import');
+                        }
+                    }
+                }
+                
+                break; // Нашли нужный фильтр, выходим из цикла
+            }
+        }
+        
+        return $count;
+    }
+    
+    /**
+     * Очистка всех импортированных товаров из Tilda
+     */
+    public function actionClearImported()
+    {
+        try {
+            // Поиск товаров с SKU, начинающимся с 'tilda_'
+            $count = Product::deleteAll(['like', 'sku', 'tilda_%', false]);
+            
+            // Сбрасываем автоинкремент, если нужно
+            if ($count > 0) {
+                // Получаем текущий максимальный ID
+                $maxId = Product::find()->max('id');
+                if ($maxId) {
+                    // Устанавливаем новое значение автоинкремента
+                    Yii::$app->db->createCommand('ALTER TABLE product AUTO_INCREMENT = ' . ($maxId + 1))->execute();
+                }
+            }
+            
+            Yii::$app->session->setFlash('success', "Удалено $count товаров, импортированных из Tilda");
+        } catch (\Exception $e) {
+            Yii::$app->session->setFlash('error', 'Ошибка при удалении товаров: ' . $e->getMessage());
+        }
+        
+        return $this->redirect(['index']);
     }
     
     /**
@@ -167,35 +346,56 @@ class ProductImportController extends Controller
      *
      * @param array $item Данные товара
      * @param Category $defaultCategory Категория по умолчанию
-     * @return bool Результат обработки
+     * @param bool $cleanHtml Очищать HTML-теги в описаниях
+     * @param bool $updateExisting Обновлять существующие товары
+     * @param bool $importCategories Импортировать категории
+     * @return string Результат обработки ('imported', 'updated', 'skipped', 'error')
      */
-    private function processProduct($item, $defaultCategory)
+    private function processProduct($item, $defaultCategory, $cleanHtml = true, $updateExisting = true, $importCategories = true)
     {
         // Проверка обязательных полей
-        if (empty($item['title']) || !isset($item['price'])) {
+        if (empty($item['title']) || !isset($item['uid'])) {
             Yii::warning('Товар пропущен из-за отсутствия обязательных полей: ' . Json::encode($item));
-            return false;
+            return 'error';
         }
         
-        // Проверяем, существует ли товар с таким UID или SKU
-        $existingProduct = null;
-        if (!empty($item['uid'])) {
-            $existingProduct = Product::findOne(['sku' => 'tilda_' . $item['uid']]);
-        } elseif (!empty($item['sku'])) {
-            $existingProduct = Product::findOne(['sku' => $item['sku']]);
+        // Формируем уникальный SKU для товара Tilda
+        $tildaSku = 'tilda_' . $item['uid'];
+        
+        // Проверяем, существует ли товар с таким SKU
+        $existingProduct = Product::findOne(['sku' => $tildaSku]);
+        
+        // Если товар существует и не нужно обновлять - пропускаем
+        if ($existingProduct && !$updateExisting) {
+            return 'skipped';
         }
         
         // Создаём новый объект Product или используем существующий
         $product = $existingProduct ?? new Product();
+        $isNewProduct = $product->isNewRecord;
+        
+        // Очищаем от HTML-тегов, если нужно
+        $title = $item['title'];
+        $description = $item['descr'] ?? '';
+        $text = $item['text'] ?? '';
+        
+        if ($cleanHtml) {
+            $title = strip_tags($title);
+            $description = strip_tags($description);
+            $text = HtmlPurifier::process($text); // Безопасная очистка HTML с помощью HtmlPurifier
+        }
         
         // Заполняем поля
-        $product->name = $item['title'];
-        $product->sku = !empty($item['uid']) ? 'tilda_' . $item['uid'] : ($item['sku'] ?? '');
-        $product->price = $item['price'];
-        $product->short_description = $item['descr'] ?? '';
-        $product->full_description = $item['text'] ?? '';
+        $product->name = $title;
+        $product->sku = $tildaSku;
+        $product->price = $item['price'] ?? 0;
+        $product->short_description = $description;
+        $product->full_description = $text;
         $product->status = 1; // Активен по умолчанию
-        $product->category_id = $defaultCategory->id;
+        
+        // Определяем категорию товара
+        $categoryId = $this->getCategoryIdFromPartuids($item, $defaultCategory->id, $importCategories);
+        $product->category_id = $categoryId;
         
         // Генерируем slug, если его нет
         if (empty($product->slug)) {
@@ -203,7 +403,7 @@ class ProductImportController extends Controller
         }
         
         // Обрабатываем изображение
-        if (!empty($item['gallery']) && empty($product->image)) {
+        if (!empty($item['gallery']) && (empty($product->image) || $updateExisting)) {
             try {
                 $galleries = Json::decode($item['gallery']);
                 if (is_array($galleries) && !empty($galleries[0]['img'])) {
@@ -216,14 +416,77 @@ class ProductImportController extends Controller
         
         // Сохраняем товар в базе
         if ($product->save()) {
-            return true;
+            return $isNewProduct ? 'imported' : 'updated';
         } else {
             Yii::error('Не удалось сохранить товар: ' . Json::encode([
                 'errors' => $product->errors,
                 'data' => $item
             ]));
-            return false;
+            return 'error';
         }
+    }
+    
+    /**
+     * Определяет категорию товара на основе partuids из Tilda
+     *
+     * @param array $item Данные товара
+     * @param int $defaultCategoryId ID категории по умолчанию
+     * @param bool $importCategories Импортировать категории
+     * @return int ID категории
+     */
+    private function getCategoryIdFromPartuids($item, $defaultCategoryId, $importCategories = true)
+    {
+        // Если импорт категорий отключен или нет маппинга категорий
+        if (!$importCategories || empty($this->categoryMapping)) {
+            return $defaultCategoryId;
+        }
+        
+        // Если у товара нет partuids
+        if (empty($item['partuids'])) {
+            return $defaultCategoryId;
+        }
+        
+        try {
+            // Парсим partuids - это может быть как JSON строка, так и уже декодированный массив
+            $partuids = $item['partuids'];
+            if (is_string($partuids)) {
+                $partuids = Json::decode($partuids);
+            }
+            
+            // Если не массив или пустой массив
+            if (!is_array($partuids) || empty($partuids)) {
+                return $defaultCategoryId;
+            }
+            
+            // Ищем первую доступную категорию из partuids в нашем маппинге
+            foreach ($partuids as $partuid) {
+                if (isset($this->categoryMapping[$partuid])) {
+                    return $this->categoryMapping[$partuid];
+                }
+            }
+            
+            // Если необходимо создать новую категорию для partuid
+            if (!empty($this->tildaCategories) && $importCategories) {
+                foreach ($this->tildaCategories as $tildaCategory) {
+                    if (isset($tildaCategory['id']) && in_array($tildaCategory['id'], $partuids)) {
+                        // Создаем новую категорию
+                        $newCategory = new Category();
+                        $newCategory->name = $tildaCategory['value'];
+                        $newCategory->slug = Inflector::slug($tildaCategory['value']);
+                        $newCategory->status = 1;
+                        
+                        if ($newCategory->save()) {
+                            $this->categoryMapping[$tildaCategory['id']] = $newCategory->id;
+                            return $newCategory->id;
+                        }
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            Yii::warning('Ошибка при обработке partuids: ' . $e->getMessage(), 'import');
+        }
+        
+        return $defaultCategoryId;
     }
     
     /**
@@ -237,6 +500,8 @@ class ProductImportController extends Controller
         if (!$defaultCategory) {
             $defaultCategory = new Category();
             $defaultCategory->name = 'Импорт из Tilda';
+            $defaultCategory->slug = 'import-iz-tilda';
+            $defaultCategory->status = 1;
             
             if (!$defaultCategory->save()) {
                 Yii::error('Не удалось создать категорию: ' . Json::encode($defaultCategory->errors));
@@ -256,7 +521,7 @@ class ProductImportController extends Controller
      */
     private function generateSlug($name)
     {
-        $slug = \yii\helpers\Inflector::slug($name);
+        $slug = Inflector::slug($name);
         $baseSlug = $slug;
         $i = 1;
         
@@ -302,10 +567,60 @@ class ProductImportController extends Controller
             $html .= "<p>Всего товаров: " . $data['total'] . "</p>";
         }
         
+        // Выводим информацию о фильтрах (категориях)
+        if (isset($data['filters']) && isset($data['filters']['filters'])) {
+            $html .= "<h2>Фильтры (категории):</h2>";
+            foreach ($data['filters']['filters'] as $filter) {
+                if ($filter['name'] === 'storepartuid') {
+                    $html .= "<pre>" . htmlspecialchars(Json::encode($filter, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) . "</pre>";
+                    break;
+                }
+            }
+        }
+        
         if (isset($data['products']) && !empty($data['products'])) {
             $firstProduct = $data['products'][0];
             $html .= "<h2>Структура первого товара:</h2>";
             $html .= "<pre>" . htmlspecialchars(Json::encode($firstProduct, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) . "</pre>";
+            
+            // Анализируем partuids
+            if (isset($firstProduct['partuids'])) {
+                $html .= "<h3>Partuids товара:</h3>";
+                try {
+                    $partuids = $firstProduct['partuids'];
+                    if (is_string($partuids)) {
+                        $partuids = Json::decode($partuids);
+                    }
+                    $html .= "<pre>" . htmlspecialchars(Json::encode($partuids, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) . "</pre>";
+                    
+                    // Показываем соответствие partuids и категорий
+                    if (isset($data['filters']) && isset($data['filters']['filters'])) {
+                        foreach ($data['filters']['filters'] as $filter) {
+                            if ($filter['name'] === 'storepartuid' && isset($filter['values'])) {
+                                $html .= "<h3>Соответствие partuids и категорий:</h3>";
+                                $html .= "<table border='1' cellpadding='5'>";
+                                $html .= "<tr><th>ID категории</th><th>Название категории</th><th>Присутствует в товаре</th></tr>";
+                                
+                                foreach ($filter['values'] as $category) {
+                                    if (isset($category['id']) && isset($category['value'])) {
+                                        $isInProduct = in_array($category['id'], $partuids) ? 'Да' : 'Нет';
+                                        $html .= "<tr>";
+                                        $html .= "<td>" . htmlspecialchars($category['id']) . "</td>";
+                                        $html .= "<td>" . htmlspecialchars($category['value']) . "</td>";
+                                        $html .= "<td>" . $isInProduct . "</td>";
+                                        $html .= "</tr>";
+                                    }
+                                }
+                                
+                                $html .= "</table>";
+                                break;
+                            }
+                        }
+                    }
+                } catch (\Exception $e) {
+                    $html .= "<p>Ошибка при разборе partuids: " . $e->getMessage() . "</p>";
+                }
+            }
             
             // Анализируем структуру
             $structure = $this->analyzeStructure($firstProduct);

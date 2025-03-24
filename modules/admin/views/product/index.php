@@ -20,12 +20,8 @@ $this->params['breadcrumbs'][] = $this->title;
                     <h3 class="card-title"><?= Html::encode($this->title) ?></h3>
                     <div class="card-tools">
                         <?= Html::a('<i class="fas fa-plus"></i> Добавить товар', ['create'], ['class' => 'btn btn-success btn-sm']) ?>
-                        <?= Html::a('<i class="fas fa-cloud-download-alt"></i> Импорт из Tilda', ['/admin/product-import/import-all-from-api'], [
+                        <?= Html::a('<i class="fas fa-cloud-download-alt"></i> Импорт из Tilda', ['/admin/product-import/index'], [
                             'class' => 'btn btn-info btn-sm ml-2',
-                            'data' => [
-                                'confirm' => 'Вы действительно хотите импортировать товары из Tilda?',
-                                'method' => 'post',
-                            ],
                         ]) ?>
                     </div>
                 </div>
