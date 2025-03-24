@@ -1,0 +1,588 @@
+/* === ОБЩИЕ СТИЛИ === */
+:root {
+    --primary-color: #00c853;
+    --primary-hover: #00b24d;
+    --accent-color: #6fff4f;
+    --accent-hover: #5ce243;
+    --text-color: #1e1e1e;
+    --light-gray: #f9f9f9;
+    --medium-gray: #eee;
+    --dark-gray: #aaa;
+    --danger-color: #d50000;
+    --white: #ffffff;
+    --black: #111;
+}
+
+body {
+    font-family: 'Inter', 'Montserrat', 'Segoe UI', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--text-color);
+    background-color: var(--white);
+    margin: 0;
+    padding: 0;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+a:hover {
+    color: var(--primary-color);
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Montserrat', 'Roboto', sans-serif;
+    font-weight: 700;
+    margin: 0 0 0.5em 0;
+}
+
+.container {
+    max-width: 1200px;
+    padding: 0 15px;
+    margin: 0 auto;
+}
+
+.text-center {
+    text-align: center;
+}
+
+/* === HEADER === */
+.top-bar {
+    background-color: var(--black);
+    color: var(--white);
+    font-size: 14px;
+    padding: 8px 0;
+}
+
+.top-bar a {
+    color: var(--white);
+    opacity: 0.8;
+}
+
+.top-bar a:hover {
+    opacity: 1;
+    color: var(--accent-color);
+}
+
+/* === NAVIGATION === */
+.main-header {
+    padding: 15px 0;
+    border-bottom: 1px solid var(--medium-gray);
+    background-color: var(--white);
+}
+
+.logo {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: bold;
+    font-size: 24px;
+    color: var(--text-color);
+    text-decoration: none;
+}
+
+.logo:hover {
+    color: var(--primary-color);
+}
+
+.main-menu {
+    display: flex;
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    justify-content: center;
+}
+
+.main-menu li {
+    margin: 0 15px;
+}
+
+.main-menu a {
+    font-weight: 500;
+    font-size: 14px;
+    padding: 10px 0;
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+}
+
+.main-menu a:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: var(--primary-color);
+    transition: width 0.3s ease;
+}
+
+.main-menu a:hover:after {
+    width: 100%;
+}
+
+/* === ИКОНКИ ХЕДЕРА === */
+.header-icons {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.header-icon {
+    font-size: 20px;
+    margin-left: 20px;
+    color: var(--text-color);
+    position: relative;
+}
+
+.header-icon:hover {
+    color: var(--primary-color);
+}
+
+.cart-count {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: var(--primary-color);
+    color: var(--white);
+    font-size: 10px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+}
+
+/* === КНОПКИ === */
+.btn {
+    font-family: 'Inter', 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    text-align: center;
+    display: inline-block;
+    cursor: pointer;
+    border: none;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: var(--white);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 200, 83, 0.2);
+}
+
+.btn-outline-primary {
+    background-color: transparent;
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    color: var(--white);
+    transform: translateY(-2px);
+}
+
+.btn-success {
+    background-color: var(--accent-color);
+    color: var(--text-color);
+}
+
+.btn-success:hover {
+    background-color: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(111, 255, 79, 0.2);
+}
+
+/* === БАННЕР === */
+.hero-banner {
+    position: relative;
+    height: 500px;
+    background: var(--light-gray);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    margin-bottom: 60px;
+}
+
+.banner-content {
+    position: relative;
+    z-index: 2;
+    padding: 40px;
+    max-width: 500px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.banner-title {
+    font-size: 36px;
+    margin-bottom: 15px;
+    line-height: 1.2;
+    color: var(--text-color);
+}
+
+.banner-text {
+    font-size: 16px;
+    margin-bottom: 25px;
+    opacity: 0.8;
+}
+
+.banner-image {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 60%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* === СЕКЦИИ === */
+.section-title {
+    font-size: 28px;
+    margin-bottom: 30px;
+    position: relative;
+    display: inline-block;
+}
+
+.section-title .emoji {
+    display: inline-block;
+    margin-left: 10px;
+    animation: float 2s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.section-title:after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 0;
+    width: 60px;
+    height: 3px;
+    background-color: var(--primary-color);
+}
+
+/* === КАРТОЧКИ ТОВАРОВ === */
+.product-card {
+    background: var(--white);
+    border: 1px solid var(--medium-gray);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    margin-bottom: 30px;
+    height: 100%;
+}
+
+.product-card:hover {
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.08);
+    transform: translateY(-5px);
+}
+
+.product-image {
+    position: relative;
+    padding-top: 100%; /* Соотношение 1:1 */
+    overflow: hidden;
+}
+
+.product-image img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.product-card:hover .product-image img {
+    transform: scale(1.05);
+}
+
+.product-info {
+    padding: 15px;
+    text-align: center;
+}
+
+.product-category {
+    font-size: 12px;
+    color: var(--dark-gray);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.product-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-color);
+    height: 40px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.product-price {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.current-price {
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--danger-color);
+}
+
+.old-price {
+    text-decoration: line-through;
+    color: var(--dark-gray);
+    font-size: 14px;
+}
+
+/* === СЛАЙДЕР ТОЧКИ === */
+.slick-dots {
+    display: flex;
+    justify-content: center;
+    list-style: none;
+    padding: 0;
+    margin: 20px 0 0;
+}
+
+.slick-dots li {
+    margin: 0 5px;
+}
+
+.slick-dots button {
+    width: 10px;
+    height: 10px;
+    background-color: var(--medium-gray);
+    border: none;
+    border-radius: 50%;
+    font-size: 0;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.3s ease;
+}
+
+.slick-dots li.slick-active button {
+    background-color: var(--primary-color);
+    transform: scale(1.3);
+}
+
+/* === ПРЕИМУЩЕСТВА === */
+.benefits-section {
+    margin: 60px 0;
+}
+
+.benefit-item {
+    text-align: center;
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+.benefit-item:hover {
+    transform: translateY(-5px);
+}
+
+.benefit-icon {
+    width: 70px;
+    height: 70px;
+    margin: 0 auto 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--primary-color);
+    border-radius: 50%;
+    color: var(--primary-color);
+    font-size: 28px;
+    transition: all 0.3s ease;
+}
+
+.benefit-item:hover .benefit-icon {
+    background-color: var(--primary-color);
+    color: var(--white);
+}
+
+.benefit-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.benefit-text {
+    color: var(--dark-gray);
+    font-size: 14px;
+}
+
+/* === ПОДВАЛ === */
+.footer {
+    background-color: var(--light-gray);
+    padding: 60px 0 20px;
+    margin-top: 60px;
+}
+
+.footer-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: var(--text-color);
+    position: relative;
+    display: inline-block;
+}
+
+.footer-title:after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 0;
+    width: 40px;
+    height: 2px;
+    background-color: var(--primary-color);
+}
+
+.footer-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-links li {
+    margin-bottom: 10px;
+}
+
+.footer-links a {
+    color: var(--text-color);
+    opacity: 0.7;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.footer-links a:hover {
+    opacity: 1;
+    color: var(--primary-color);
+    padding-left: 5px;
+}
+
+.footer-contact p {
+    margin-bottom: 10px;
+    color: var(--text-color);
+    opacity: 0.7;
+    font-size: 14px;
+}
+
+.footer-contact p strong {
+    opacity: 1;
+    color: var(--text-color);
+}
+
+.social-links {
+    display: flex;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.social-links a {
+    color: var(--text-color);
+    opacity: 0.7;
+    font-size: 18px;
+}
+
+.social-links a:hover {
+    opacity: 1;
+    color: var(--primary-color);
+    transform: translateY(-3px);
+}
+
+.footer-bottom {
+    border-top: 1px solid var(--medium-gray);
+    padding-top: 20px;
+    margin-top: 40px;
+    color: var(--dark-gray);
+    font-size: 13px;
+}
+
+/* === АДАПТИВНОСТЬ === */
+@media (max-width: 992px) {
+    .main-menu {
+        flex-wrap: wrap;
+    }
+    
+    .main-menu li {
+        margin: 0 10px;
+    }
+    
+    .banner-title {
+        font-size: 28px;
+    }
+    
+    .banner-content {
+        padding: 30px;
+        max-width: 400px;
+    }
+}
+
+@media (max-width: 768px) {
+    .top-bar {
+        text-align: center;
+    }
+    
+    .main-menu {
+        display: none;
+    }
+    
+    .hero-banner {
+        height: auto;
+        padding: 40px 20px;
+    }
+    
+    .banner-content {
+        max-width: 100%;
+        margin-bottom: 30px;
+    }
+    
+    .banner-image {
+        position: static;
+        width: 100%;
+        height: 300px;
+    }
+    
+    .banner-title {
+        font-size: 24px;
+    }
+    
+    .section-title {
+        font-size: 24px;
+    }
+    
+    .benefit-item {
+        margin-bottom: 30px;
+    }
+    
+    .footer [class*="col-"] {
+        margin-bottom: 30px;
+    }
+}
