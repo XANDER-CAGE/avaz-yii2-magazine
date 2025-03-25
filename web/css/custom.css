@@ -71,6 +71,10 @@ header {
     border-color: #82A5FF;
     font-weight: 600;
 }
+.btn-danger + .btn-outline-secondary {
+    margin-left: 10px; /* Установи нужный отступ */
+}
+
 
 .btn-outline-primary:hover {
     background-color: #82A5FF;

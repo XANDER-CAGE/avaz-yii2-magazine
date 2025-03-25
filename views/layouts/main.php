@@ -58,21 +58,29 @@ AppAsset::register($this);
                 </li>
             </ul>
             <div class="d-flex align-items-center">
-                <a href="<?= Url::to(['/cart']) ?>" class="btn btn-light position-relative me-2">
-                    <i class="fas fa-shopping-cart"></i>
-                    <span class="cart-count position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                        <?= Yii::$app->cart->getTotalCount() ?>
-                    </span>
-                </a>
-                <a href="<?= Url::to(['/user/profile']) ?>" class="btn btn-light me-2">
-                    <i class="far fa-user"></i>
-                </a>
-                <?php if (Yii::$app->user->isGuest): ?>
-                    <a href="<?= Url::to(['/site/login']) ?>" class="btn btn-success">Войти</a>
-                <?php else: ?>
-                    <a href="<?= Url::to(['/site/logout']) ?>" class="btn btn-outline-secondary" data-method="post">Выйти</a>
-                <?php endif; ?>
-            </div>
+    <a href="<?= Url::to(['/cart']) ?>" class="btn btn-light position-relative me-2">
+        <i class="fas fa-shopping-cart"></i>
+        <span class="cart-count position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+            <?= Yii::$app->cart->getTotalCount() ?>
+        </span>
+    </a>
+    <a href="<?= Url::to(['/user/profile']) ?>" class="btn btn-light me-2">
+        <i class="far fa-user"></i>
+    </a>
+    
+    <?php if (Yii::$app->user->isGuest): ?>
+        <a href="<?= Url::to(['/site/login']) ?>" class="btn btn-success">Войти</a>
+    <?php else: ?>
+        <?php if (Yii::$app->user->identity->isAdmin()): ?>
+            <a href="<?= Url::to(['/admin']) ?>" class="btn btn-danger">
+            <i class="fas fa-user-shield"></i>
+                    </a>
+        <?php endif; ?>
+        <a href="<?= Url::to(['/site/logout']) ?>" class="btn btn-outline-secondary" data-method="post">Выйти</a>
+    <?php endif; ?>
+</div>
+
+
         </div>
     </div>
 </nav>
