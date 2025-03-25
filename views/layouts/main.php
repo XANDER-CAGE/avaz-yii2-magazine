@@ -22,111 +22,127 @@ AppAsset::register($this);
 <body>
 <?php $this->beginBody() ?>
 
-<header class="bg-dark text-white py-2 px-3 d-flex justify-content-between align-items-center">
-    <div>Москва <i class="fas fa-chevron-down ml-1"></i></div>
+<!-- Верхняя панель -->
+<header class="bg-light border-bottom small py-2 px-3 d-flex justify-content-between align-items-center text-muted">
     <div>
-        <a href="<?= Url::to(['/site/delivery']) ?>" class="text-white mx-2">Доставка</a>
-        <a href="<?= Url::to(['/site/payment']) ?>" class="text-white mx-2">Оплата</a>
-        <a href="<?= Url::to(['/site/contact']) ?>" class="text-white mx-2">Контакты</a>
-        <a href="<?= Url::to(['/site/about']) ?>" class="text-white mx-2">О компании</a>
+        <i class="fas fa-map-marker-alt me-1"></i> Москва
+    </div>
+    <div class="d-none d-sm-block">
+        <a href="<?= Url::to(['/site/delivery']) ?>" class="me-3">Доставка</a>
+        <a href="<?= Url::to(['/site/payment']) ?>" class="me-3">Оплата</a>
+        <a href="<?= Url::to(['/site/contact']) ?>" class="me-3">Контакты</a>
+        <a href="<?= Url::to(['/site/about']) ?>">О компании</a>
     </div>
 </header>
 
+<!-- Навигация -->
 <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
     <div class="container">
-        <a class="navbar-brand" href="<?= Url::home() ?>"><strong>limaron</strong></a>
-        <ul class="navbar-nav mx-auto">
-        <?php 
-        // Получаем топ-5 категорий
-        $topCategories = \app\models\Category::getTopCategories(5);
-        
-        foreach ($topCategories as $category): ?>
-            <li class="nav-item">
-                <?= Html::a(
-                    Html::encode($category->name), 
-                    ['/product/index', 'category_id' => $category->id], 
-                    ['class' => 'nav-link']
-                ) ?>
-            </li>
-        <?php endforeach; ?>
-        
-        <!-- Оставляем пункт "Акции" как статичный -->
-        <li class="nav-item"><?= Html::a('Акции', ['/site/sale'], ['class' => 'nav-link text-danger']) ?></li>
-    </ul>
+        <a class="navbar-brand" href="<?= Url::home() ?>">Limaron</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="mainNavbar">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <?php
+                $topCategories = \app\models\Category::getTopCategories(5);
+                foreach ($topCategories as $category): ?>
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= Url::to(['/product/index', 'category_id' => $category->id]) ?>">
+                            <?= Html::encode($category->name) ?>
+                        </a>
+                    </li>
+                <?php endforeach; ?>
+                <li class="nav-item">
+                    <a class="nav-link text-danger" href="<?= Url::to(['/site/sale']) ?>">Акции</a>
+                </li>
+            </ul>
             <div class="d-flex align-items-center">
-                <a href="<?= Url::to(['/cart']) ?>" class="btn btn-light mx-1"><i class="fas fa-shopping-cart"></i></a>
-                <a href="<?= Url::to(['/user/profile']) ?>" class="btn btn-light mx-1"><i class="far fa-user"></i></a>
-                <a href="<?= Url::to(['/site/login']) ?>" class="btn btn-success mx-1">Войти</a>
+                <a href="<?= Url::to(['/cart']) ?>" class="btn btn-light position-relative me-2">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                    </span>
+                </a>
+                <a href="<?= Url::to(['/user/profile']) ?>" class="btn btn-light me-2">
+                    <i class="far fa-user"></i>
+                </a>
+                <?php if (Yii::$app->user->isGuest): ?>
+                    <a href="<?= Url::to(['/site/login']) ?>" class="btn btn-success">Войти</a>
+                <?php else: ?>
+                    <a href="<?= Url::to(['/site/logout']) ?>" class="btn btn-outline-secondary" data-method="post">Выйти</a>
+                <?php endif; ?>
             </div>
         </div>
     </div>
 </nav>
 
-<main class="container my-4">
+<!-- Хлебные крошки -->
+<div class="container my-3">
     <?= Breadcrumbs::widget([
-        'links' => isset($this->params['breadcrumbs']) ? $this->params['breadcrumbs'] : [],
+        'links' => $this->params['breadcrumbs'] ?? [],
     ]) ?>
-    
+</div>
+
+<!-- Контент -->
+<main class="container mb-5">
     <?= $content ?>
 </main>
 
-<section class="bg-light py-5">
-    <div class="container text-center">
-        <div class="row">
-            <div class="col-md-3">
-                <i class="fas fa-percent fa-2x text-success"></i>
-                <h5 class="mt-2">Выгодные цены</h5>
-                <p>Часто используемый в печати и веб-дизайне.</p>
+<!-- Преимущества -->
+<section class="bg-white py-5 border-top">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-6 col-md-3 mb-4 mb-md-0">
+                <i class="fas fa-percent fa-2x text-success mb-2"></i>
+                <h6 class="fw-bold">Выгодные цены</h6>
+                <small class="text-muted">Скидки каждый день</small>
             </div>
-            <div class="col-md-3">
-                <i class="fas fa-shield-alt fa-2x text-success"></i>
-                <h5 class="mt-2">100% гарантия</h5>
-                <p>Часто используемый в печати и веб-дизайне.</p>
+            <div class="col-6 col-md-3 mb-4 mb-md-0">
+                <i class="fas fa-shield-alt fa-2x text-success mb-2"></i>
+                <h6 class="fw-bold">Гарантия</h6>
+                <small class="text-muted">Надёжность и возврат</small>
             </div>
-            <div class="col-md-3">
-                <i class="fas fa-truck fa-2x text-success"></i>
-                <h5 class="mt-2">Бесплатная доставка</h5>
-                <p>Часто используемый в печати и веб-дизайне.</p>
+            <div class="col-6 col-md-3 mb-4 mb-md-0">
+                <i class="fas fa-truck fa-2x text-success mb-2"></i>
+                <h6 class="fw-bold">Доставка</h6>
+                <small class="text-muted">Быстро и удобно</small>
             </div>
-            <div class="col-md-3">
-                <i class="fas fa-credit-card fa-2x text-success"></i>
-                <h5 class="mt-2">Онлайн оплата</h5>
-                <p>Часто используемый в печати и веб-дизайне.</p>
+            <div class="col-6 col-md-3">
+                <i class="fas fa-credit-card fa-2x text-success mb-2"></i>
+                <h6 class="fw-bold">Оплата онлайн</h6>
+                <small class="text-muted">Карты и перевод</small>
             </div>
         </div>
     </div>
-</section>
-
-<footer class="bg-dark text-white pt-4 pb-2">
+</section><!-- Подвал -->
+<footer class="bg-dark text-white pt-4 pb-3">
     <div class="container">
         <div class="row">
-            <div class="col-md-4">
-                <h6>Карта сайта</h6>
+            <div class="col-md-4 mb-3">
+                <h6>Компания</h6>
                 <ul class="list-unstyled">
-                    <li><a href="#" class="text-white">Доставка</a></li>
-                    <li><a href="#" class="text-white">Оплата</a></li>
-                    <li><a href="#" class="text-white">Контакты</a></li>
-                    <li><a href="#" class="text-white">О компании</a></li>
+                    <li><a href="<?= Url::to(['/site/about']) ?>">О нас</a></li>
+                    <li><a href="<?= Url::to(['/site/contact']) ?>">Контакты</a></li>
+                    <li><a href="<?= Url::to(['/site/delivery']) ?>">Доставка</a></li>
+                    <li><a href="<?= Url::to(['/site/payment']) ?>">Оплата</a></li>
                 </ul>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-4 mb-3">
                 <h6>Каталог</h6>
                 <ul class="list-unstyled">
-                    <li><a href="#" class="text-white">Одежда и обувь</a></li>
-                    <li><a href="#" class="text-white">Для дома</a></li>
-                    <li><a href="#" class="text-white">Электроника</a></li>
-                    <li><a href="#" class="text-white">Интернет</a></li>
+                    <li><a href="<?= Url::to(['/product/index']) ?>">Все товары</a></li>
+                    <li><a href="<?= Url::to(['/site/sale']) ?>">Скидки</a></li>
                 </ul>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-4 mb-3">
                 <h6>Контакты</h6>
-                <p>8 (800) 555 - 35 - 35</p>
-                <p>shop@info.ru</p>
-                <p>г. Москва, ул. Московская, д. 20</p>
+                <p class="mb-1">8 (800) 555-35-35</p>
+                <p class="mb-1">shop@info.ru</p>
+                <p class="mb-0">Москва, ул. Московская, д. 20</p>
             </div>
         </div>
         <div class="text-center mt-3">
-            <small>© Все права защищены 2022</small>
+            <small class="text-muted">© <?= date('Y') ?> Limaron. Все права защищены.</small>
         </div>
     </div>
 </footer>
