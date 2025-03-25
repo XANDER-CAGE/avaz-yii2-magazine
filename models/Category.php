@@ -69,5 +69,20 @@ class Category extends \yii\db\ActiveRecord
         return $this->hasMany(Product::class, ['category_id' => 'id']);
     }
 
+    /**
+     * Возвращает топ-5 категорий (по количеству товаров)
+     * @param int $limit Количество категорий для возврата
+     * @return Category[] Массив объектов категорий
+     */
+    public static function getTopCategories($limit = 5)
+    {
+        return self::find()
+            ->select(['category.*', 'COUNT(product.id) as productCount'])
+            ->leftJoin('product', 'product.category_id = category.id')
+            ->groupBy('category.id')
+            ->orderBy(['productCount' => SORT_DESC])
+            ->limit($limit)
+            ->all();
+    }
 
 }

@@ -35,14 +35,24 @@ AppAsset::register($this);
 <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
     <div class="container">
         <a class="navbar-brand" href="<?= Url::home() ?>"><strong>limaron</strong></a>
-        <div class="collapse navbar-collapse">
-            <ul class="navbar-nav mx-auto">
-                <li class="nav-item"><?= Html::a('Женская одежда', ['/category/women'], ['class' => 'nav-link']) ?></li>
-                <li class="nav-item"><?= Html::a('Мужская одежда', ['/category/men'], ['class' => 'nav-link']) ?></li>
-                <li class="nav-item"><?= Html::a('Обувь', ['/category/shoes'], ['class' => 'nav-link']) ?></li>
-                <li class="nav-item"><?= Html::a('Летняя коллекция', ['/category/summer'], ['class' => 'nav-link']) ?></li>
-                <li class="nav-item"><?= Html::a('Акции', ['/promotion'], ['class' => 'nav-link text-danger']) ?></li>
-            </ul>
+        <ul class="navbar-nav mx-auto">
+        <?php 
+        // Получаем топ-5 категорий
+        $topCategories = \app\models\Category::getTopCategories(5);
+        
+        foreach ($topCategories as $category): ?>
+            <li class="nav-item">
+                <?= Html::a(
+                    Html::encode($category->name), 
+                    ['/product/index', 'category_id' => $category->id], 
+                    ['class' => 'nav-link']
+                ) ?>
+            </li>
+        <?php endforeach; ?>
+        
+        <!-- Оставляем пункт "Акции" как статичный -->
+        <li class="nav-item"><?= Html::a('Акции', ['/site/sale'], ['class' => 'nav-link text-danger']) ?></li>
+    </ul>
             <div class="d-flex align-items-center">
                 <a href="<?= Url::to(['/cart']) ?>" class="btn btn-light mx-1"><i class="fas fa-shopping-cart"></i></a>
                 <a href="<?= Url::to(['/user/profile']) ?>" class="btn btn-light mx-1"><i class="far fa-user"></i></a>
