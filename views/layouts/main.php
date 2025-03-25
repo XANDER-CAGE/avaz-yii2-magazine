@@ -61,6 +61,7 @@ AppAsset::register($this);
                 <a href="<?= Url::to(['/cart']) ?>" class="btn btn-light position-relative me-2">
                     <i class="fas fa-shopping-cart"></i>
                     <span class="cart-count position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                        <?= Yii::$app->cart->getTotalCount() ?>
                     </span>
                 </a>
                 <a href="<?= Url::to(['/user/profile']) ?>" class="btn btn-light me-2">

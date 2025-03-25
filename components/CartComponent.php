@@ -27,6 +27,19 @@ class CartComponent extends \yii\base\Component
         Yii::$app->session->set(self::SESSION_KEY, $cart);
     }
 
+    public function update($productId, $quantity)
+    {
+        $cart = $this->getItems();
+
+        if (isset($cart[$productId])) {
+            $cart[$productId] = max(1, (int)$quantity); // Минимум 1 товар
+            Yii::$app->session->set(self::SESSION_KEY, $cart);
+            return true;
+        }
+        
+        return false;
+    }
+
     public function remove($productId)
     {
         $cart = $this->getItems();
