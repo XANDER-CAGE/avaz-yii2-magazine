@@ -6,14 +6,14 @@ use yii\helpers\Url;
 /** @var $orders app\models\Order[] */
 
 $this->title = 'Личный кабинет';
-$this->params['breadcrumbs'][] = $this->title;
 ?>
 
-<div class="user-profile">
+<div class="container my-5">
     <div class="row">
-        <div class="col-md-4">
+        <!-- Левая колонка -->
+        <div class="col-md-4 mb-4">
             <!-- Карточка пользователя -->
-            <div class="card mb-4">
+            <div class="card bg-white shadow-sm rounded mb-4">
                 <div class="card-body text-center">
                     <?php if ($user->avatar): ?>
                         <img src="<?= $user->avatar ?>" class="img-fluid rounded-circle mb-3" style="max-width: 150px; height: 150px; object-fit: cover;" alt="<?= Html::encode($user->username) ?>">
@@ -29,7 +29,7 @@ $this->params['breadcrumbs'][] = $this->title;
             </div>
 
             <!-- Навигация -->
-            <div class="card">
+            <div class="card bg-white shadow-sm rounded">
                 <div class="list-group list-group-flush">
                     <?= Html::a('Личный кабинет', ['profile'], ['class' => 'list-group-item list-group-item-action active']) ?>
                     <?= Html::a('Мои заказы', ['order-history'], ['class' => 'list-group-item list-group-item-action']) ?>
@@ -42,13 +42,12 @@ $this->params['breadcrumbs'][] = $this->title;
             </div>
         </div>
 
+        <!-- Правая колонка -->
         <div class="col-md-8">
-            <!-- Личная информация -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h4 class="mb-0">Личная информация</h4>
-                </div>
-                <div class="card-body">
+            <div class="bg-white shadow-sm rounded p-4">
+                <!-- Личная информация -->
+                <div class="mb-4">
+                    <h4 class="mb-3 fw-bold">Личная информация</h4>
                     <div class="row">
                         <div class="col-md-6">
                             <p><strong>Имя:</strong> <?= Html::encode($user->first_name ?: 'Не указано') ?></p>
@@ -62,19 +61,18 @@ $this->params['breadcrumbs'][] = $this->title;
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Последние заказы -->
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0">Последние заказы</h4>
-                    <?= Html::a('Все заказы', ['order-history'], ['class' => 'btn btn-sm btn-outline-primary']) ?>
-                </div>
-                <div class="card-body">
+                <!-- Последние заказы -->
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="fw-bold mb-0">Последние заказы</h4>
+                        <?= Html::a('Все заказы', ['order-history'], ['class' => 'btn btn-sm btn-outline-primary']) ?>
+                    </div>
+
                     <?php if (!empty($orders)): ?>
                         <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
+                            <table class="table table-bordered align-middle mb-0">
+                                <thead class="table-light">
                                     <tr>
                                         <th>Номер</th>
                                         <th>Дата</th>
