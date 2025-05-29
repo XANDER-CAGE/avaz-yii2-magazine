@@ -19,9 +19,8 @@ AppAsset::register($this);
     <title><?= Html::encode($this->title) ?></title>
     <?php $this->head() ?>
     
-    <!-- Preload для важных ресурсов -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <!-- Дополнительные мета теги -->
     <meta name="description" content="Limaron - современный интернет-магазин с широким ассортиментом товаров">
@@ -132,26 +131,37 @@ AppAsset::register($this);
                                 <div class="col-md-8">
                                     <div class="row">
                                         <?php
-                                        $topCategories = \app\models\Category::find()
-                                            ->orderBy(['name' => SORT_ASC])
-                                            ->limit(12)
-                                            ->all();
-                                        
-                                        $chunkedCategories = array_chunk($topCategories, 4);
-                                        foreach ($chunkedCategories as $categoryChunk):
+                                        try {
+                                            $topCategories = \app\models\Category::find()
+                                                ->orderBy(['name' => SORT_ASC])
+                                                ->limit(12)
+                                                ->all();
+                                            
+                                            $chunkedCategories = array_chunk($topCategories, 4);
+                                            foreach ($chunkedCategories as $categoryChunk):
                                         ?>
-                                            <div class="col-md-6">
+                                                <div class="col-md-6">
+                                                    <div class="mega-menu-column">
+                                                        <?php foreach ($categoryChunk as $category): ?>
+                                                            <?= Html::a(
+                                                                Html::encode($category->name) . ' <span class="category-count">(' . $category->getProducts()->count() . ')</span>',
+                                                                ['/product/index', 'category_id' => $category->id],
+                                                                ['class' => 'mega-menu-item']
+                                                            ) ?>
+                                                        <?php endforeach; ?>
+                                                    </div>
+                                                </div>
+                                        <?php 
+                                            endforeach;
+                                        } catch (Exception $e) {
+                                            // Если таблица категорий не существует, показываем заглушку
+                                        ?>
+                                            <div class="col-md-12">
                                                 <div class="mega-menu-column">
-                                                    <?php foreach ($categoryChunk as $category): ?>
-                                                        <?= Html::a(
-                                                            Html::encode($category->name) . ' <span class="category-count">(' . $category->getProducts()->count() . ')</span>',
-                                                            ['/product/index', 'category_id' => $category->id],
-                                                            ['class' => 'mega-menu-item']
-                                                        ) ?>
-                                                    <?php endforeach; ?>
+                                                    <a href="<?= Url::to(['/product/index']) ?>" class="mega-menu-item">Все товары</a>
                                                 </div>
                                             </div>
-                                        <?php endforeach; ?>
+                                        <?php } ?>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -224,7 +234,7 @@ AppAsset::register($this);
                 <div class="action-item cart-dropdown">
                     <a href="<?= Url::to(['/cart']) ?>" class="action-link cart-toggle" title="Корзина">
                         <i class="fas fa-shopping-cart"></i>
-                        <span class="action-badge cart-count"><?= Yii::$app->cart->getTotalCount() ?></span>
+                        <span class="action-badge cart-count"><?= isset(Yii::$app->cart) ? Yii::$app->cart->getTotalCount() : 0 ?></span>
                     </a>
                     
                     <!-- Мини корзина -->
@@ -242,7 +252,9 @@ AppAsset::register($this);
                         <div class="cart-dropdown-footer">
                             <div class="cart-total">
                                 <span>Итого: </span>
-                                <strong id="mini-cart-total"><?= Yii::$app->formatter->asCurrency(Yii::$app->cart->getTotalSum(), 'RUB') ?></strong>
+                                <strong id="mini-cart-total">
+                                    <?= isset(Yii::$app->cart) ? Yii::$app->formatter->asCurrency(Yii::$app->cart->getTotalSum(), 'RUB') : '0 ₽' ?>
+                                </strong>
                             </div>
                             <div class="cart-actions">
                                 <?= Html::a('Корзина', ['/cart'], ['class' => 'btn btn-outline-primary btn-sm']) ?>
@@ -261,7 +273,7 @@ AppAsset::register($this);
                     <?php else: ?>
                         <div class="dropdown">
                             <a href="#" class="action-link dropdown-toggle" data-bs-toggle="dropdown" title="Профиль">
-                                <?php if (Yii::$app->user->identity->avatar): ?>
+                                <?php if (Yii::$app->user->identity->avatar ?? false): ?>
                                     <img src="<?= Yii::$app->user->identity->avatar ?>" alt="Avatar" class="user-avatar">
                                 <?php else: ?>
                                     <i class="fas fa-user"></i>
@@ -270,8 +282,8 @@ AppAsset::register($this);
                             <div class="dropdown-menu dropdown-menu-end user-menu">
                                 <div class="user-menu-header">
                                     <div class="user-info">
-                                        <strong><?= Html::encode(Yii::$app->user->identity->getFullName()) ?></strong>
-                                        <small><?= Html::encode(Yii::$app->user->identity->email) ?></small>
+                                        <strong><?= Html::encode(Yii::$app->user->identity->first_name ?? 'Пользователь') ?></strong>
+                                        <small><?= Html::encode(Yii::$app->user->identity->email ?? '') ?></small>
                                     </div>
                                 </div>
                                 <div class="dropdown-divider"></div>
@@ -279,11 +291,6 @@ AppAsset::register($this);
                                 <?= Html::a('<i class="fas fa-shopping-bag me-2"></i>Мои заказы', ['/user/order-history'], ['class' => 'dropdown-item']) ?>
                                 <?= Html::a('<i class="fas fa-heart me-2"></i>Избранное', ['/user/wishlist'], ['class' => 'dropdown-item']) ?>
                                 <?= Html::a('<i class="fas fa-cog me-2"></i>Настройки', ['/user/settings'], ['class' => 'dropdown-item']) ?>
-                                
-                                <?php if (Yii::$app->user->identity->isAdmin()): ?>
-                                    <div class="dropdown-divider"></div>
-                                    <?= Html::a('<i class="fas fa-shield-alt me-2"></i>Админ панель', ['/admin'], ['class' => 'dropdown-item text-danger']) ?>
-                                <?php endif; ?>
                                 
                                 <div class="dropdown-divider"></div>
                                 <?= Html::beginForm(['/site/logout'], 'post', ['class' => 'dropdown-item p-0']) ?>
@@ -370,16 +377,23 @@ AppAsset::register($this);
                         <h6 class="footer-title">Каталог</h6>
                         <ul class="footer-links">
                             <?php
-                            $footerCategories = \app\models\Category::find()
-                                ->orderBy(['name' => SORT_ASC])
-                                ->limit(6)
-                                ->all();
-                            foreach ($footerCategories as $category):
+                            try {
+                                $footerCategories = \app\models\Category::find()
+                                    ->orderBy(['name' => SORT_ASC])
+                                    ->limit(6)
+                                    ->all();
+                                foreach ($footerCategories as $category):
                             ?>
-                                <li>
-                                    <?= Html::a(Html::encode($category->name), ['/product/index', 'category_id' => $category->id], ['class' => 'footer-link']) ?>
-                                </li>
-                            <?php endforeach; ?>
+                                    <li>
+                                        <?= Html::a(Html::encode($category->name), ['/product/index', 'category_id' => $category->id], ['class' => 'footer-link']) ?>
+                                    </li>
+                            <?php 
+                                endforeach;
+                            } catch (Exception $e) {
+                                // Заглушка если нет категорий
+                            ?>
+                                <li><?= Html::a('Все товары', ['/product/index'], ['class' => 'footer-link']) ?></li>
+                            <?php } ?>
                         </ul>
                     </div>
                 </div>
@@ -504,7 +518,13 @@ AppAsset::register($this);
 document.addEventListener('DOMContentLoaded', function() {
     // Скрыть прелоадер
     setTimeout(function() {
-        document.getElementById('preloader').style.display = 'none';
+        const preloader = document.getElementById('preloader');
+        if (preloader) {
+            preloader.style.opacity = '0';
+            setTimeout(() => {
+                preloader.style.display = 'none';
+            }, 500);
+        }
     }, 1000);
 
     // Навигация при скролле
@@ -531,77 +551,119 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Кнопка "Наверх"
     const scrollToTop = document.getElementById('scroll-to-top');
-    window.addEventListener('scroll', function() {
-        if (window.pageYOffset > 300) {
-            scrollToTop.classList.add('visible');
-        } else {
-            scrollToTop.classList.remove('visible');
-        }
-    });
-
-    scrollToTop.addEventListener('click', function() {
-        window.scrollTo({
-            top: 0,
-            behavior: 'smooth'
+    if (scrollToTop) {
+        window.addEventListener('scroll', function() {
+            if (window.pageYOffset > 300) {
+                scrollToTop.classList.add('visible');
+            } else {
+                scrollToTop.classList.remove('visible');
+            }
         });
-    });
+
+        scrollToTop.addEventListener('click', function() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+    }
 
     // Переключатель темы
     const themeToggle = document.getElementById('theme-toggle');
-    const currentTheme = localStorage.getItem('theme') || 'light';
-    
-    if (currentTheme === 'dark') {
-        document.body.classList.add('dark-theme');
-        themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
-    }
-
-    themeToggle.addEventListener('click', function() {
-        document.body.classList.toggle('dark-theme');
+    if (themeToggle) {
+        const currentTheme = localStorage.getItem('theme') || 'light';
         
-        if (document.body.classList.contains('dark-theme')) {
-            localStorage.setItem('theme', 'dark');
+        if (currentTheme === 'dark') {
+            document.body.classList.add('dark-theme');
             themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
-        } else {
-            localStorage.setItem('theme', 'light');
-            themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
         }
-    });
+
+        themeToggle.addEventListener('click', function() {
+            document.body.classList.toggle('dark-theme');
+            
+            if (document.body.classList.contains('dark-theme')) {
+                localStorage.setItem('theme', 'dark');
+                themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+            } else {
+                localStorage.setItem('theme', 'light');
+                themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+            }
+        });
+    }
 
     // Онлайн чат
     const chatToggle = document.getElementById('chat-toggle');
     const chatClose = document.getElementById('chat-close');
     const onlineChat = document.getElementById('online-chat');
 
-    chatToggle.addEventListener('click', function() {
-        onlineChat.classList.add('active');
-    });
+    if (chatToggle && chatClose && onlineChat) {
+        chatToggle.addEventListener('click', function() {
+            onlineChat.classList.add('active');
+        });
 
-    chatClose.addEventListener('click', function() {
-        onlineChat.classList.remove('active');
-    });
+        chatClose.addEventListener('click', function() {
+            onlineChat.classList.remove('active');
+        });
+    }
 
     // Мини корзина
     loadMiniCart();
+    
+    // Инициализация анимаций
+    initScrollAnimations();
 });
 
 // Функция загрузки мини корзины
 function loadMiniCart() {
     // AJAX запрос для загрузки содержимого корзины
-    // Здесь должен быть запрос к вашему контроллеру корзины
+    // Здесь должен быть запрос к контроллеру корзины
 }
 
-// Поиск с автодополнением
-function initSearch() {
-    const searchInput = document.querySelector('.search-input');
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            const query = this.value;
-            if (query.length > 2) {
-                // AJAX запрос для автодополнения
-                // Показ результатов поиска
+// Функция инициализации анимаций при скролле
+function initScrollAnimations() {
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const delay = entry.target.dataset.delay || 0;
+                setTimeout(() => {
+                    entry.target.classList.add('visible');
+                }, delay);
             }
         });
-    }
+    }, observerOptions);
+
+    // Наблюдаем за элементами с классом fade-in
+    document.querySelectorAll('.fade-in').forEach(el => {
+        observer.observe(el);
+    });
+}
+
+// Функция показа уведомлений
+function showNotification(message, type = 'info') {
+    const alertClass = type === 'success' ? 'alert-success' : 
+                     type === 'error' ? 'alert-danger' : 
+                     type === 'warning' ? 'alert-warning' : 'alert-info';
+    
+    const notification = document.createElement('div');
+    notification.className = `alert ${alertClass} alert-dismissible fade show notification-toast`;
+    notification.setAttribute('role', 'alert');
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 5000);
 }
 </script>
 
