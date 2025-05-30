@@ -476,40 +476,6 @@ AppAsset::register($this);
     <i class="fas fa-chevron-up"></i>
 </button>
 
-<!-- Онлайн консультант -->
-<div class="online-chat" id="online-chat">
-    <div class="chat-toggle" id="chat-toggle">
-        <i class="fas fa-comments"></i>
-        <span class="chat-notification">1</span>
-    </div>
-    <div class="chat-window">
-        <div class="chat-header">
-            <h6>Онлайн консультант</h6>
-            <button class="chat-close" id="chat-close">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="chat-body">
-            <div class="chat-message bot-message">
-                <div class="message-avatar">
-                    <i class="fas fa-robot"></i>
-                </div>
-                <div class="message-content">
-                    <p>Здравствуйте! Чем могу помочь?</p>
-                    <small>Только что</small>
-                </div>
-            </div>
-        </div>
-        <div class="chat-footer">
-            <div class="chat-input-group">
-                <input type="text" class="chat-input" placeholder="Введите сообщение...">
-                <button class="chat-send">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 
 <?php $this->endBody() ?>
 
